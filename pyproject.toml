@@ -1,0 +1,14 @@
+[project]
+name = "fly-in"
+description = "Fly-in Python project"
+version = "0.1.0"
+authors = [{ name = "jhoban", email = "jhoban@42berlin.de" }]
+readme = "README.md"
+requires-python = ">=3.11"
+
+[project.optional-dependencies]
+dev = ["flake8==7.1.1", "mypy==1.11.2"]
+
+[build-system]
+requires = ["uv>=0.1.36"]
+build-backend = "uv.build"
