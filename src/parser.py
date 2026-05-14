@@ -10,19 +10,15 @@ def parse_zone_definition(line: str) -> Zone:
     try:
         # Split the line into parts
         parts = line.split()
-        if len(parts) < 3:
+        if len(parts) < 4:
             raise ValueError("Invalid zone definition format.")
 
         # Extract zone name
         zone_name = parts[1]
 
-        # Extract coordinates
-        coords_part = parts[2]
-        if not coords_part.startswith("(") or not coords_part.endswith(")"):
-            raise ValueError("Coordinates must be enclosed in parentheses.")
-        coords_str = coords_part[1:-1]  # Remove parentheses
-        x_str, y_str = coords_str.split(",")
-        x, y = int(x_str.strip()), int(y_str.strip())
+        # Extract coordinates (as two separate tokens)
+        x = int(parts[2])
+        y = int(parts[3])
 
         # Initialize default values for metadata
         zone_type = ZoneType.NORMAL
@@ -30,8 +26,8 @@ def parse_zone_definition(line: str) -> Zone:
         color = None
 
         # Parse metadata if present
-        if len(parts) > 3:
-            metadata_part = " ".join(parts[3:])
+        if len(parts) > 4:
+            metadata_part = " ".join(parts[4:])
             if metadata_part.startswith("[") and metadata_part.endswith("]"):
                 metadata_str = metadata_part[1:-1]  # Remove brackets
                 metadata_items = metadata_str.split()
@@ -111,21 +107,101 @@ def parse_map_file(path: str) -> Network:
         if line.startswith("nb_drones:"):
             nb_drones = int(line.split(":")[1].strip())
             continue
-        if line.startswith("start_hub:"):
-            start_hub = line.split(":")[1].strip()
-            continue
-        if line.startswith("end_hub:"):
-            end_hub = line.split(":")[1].strip()
-            continue
-        if line.startswith("zone:"):
-            zone = parse_zone_definition(line)
+        if (
+            line.startswith("start_hub:")
+            or line.startswith("end_hub:")
+            or line.startswith("hub:")
+            or line.startswith("zone:")
+        ):
+            # Normalize all zone/hub/start_hub/end_hub to zone: for parsing
+            # Format: <type>: <name> <x> <y> [metadata]
+            parts = line.split(":", 1)
+            kind = parts[0].strip()
+            rest = parts[1].strip()
+            # Rebuild as zone: <name> <x> <y> [metadata]
+            # For start_hub/end_hub, set special names after parsing
+            zone_line = f"zone: {rest}"
+            zone = parse_zone_definition(zone_line)
             if zone.name in zones:
-                raise ValueError(f"Parsing error at line {index}:\
-                          Duplicate zone name '{zone.name}'.")
+                raise ValueError(
+                    f"Parsing error at line {index}: "
+                    f"Duplicate zone name '{zone.name}'."
+                )
             zones[zone.name] = zone
+            if kind == "start_hub":
+                start_hub = zone.name
+            elif kind == "end_hub":
+                end_hub = zone.name
             continue
         if line.startswith("connection:"):
-            # Parse connection definition here
+            # Format: connection: <zone1>-<zone2> [metadata]
+            conn_parts = line[len("connection:"):].strip().split()
+            if not conn_parts:
+                raise ValueError(
+                    f"Parsing error at line {index}: "
+                    "Empty connection definition."
+                )
+            zones_part = conn_parts[0]
+            if "-" not in zones_part:
+                raise ValueError(
+                    f"Parsing error at line {index}: "
+                    "Connection must use dash between zones."
+                )
+            zone_a, zone_b = zones_part.split("-", 1)
+            zone_a = zone_a.strip()
+            zone_b = zone_b.strip()
+            if zone_a not in zones or zone_b not in zones:
+                raise ValueError(
+                    f"Parsing error at line {index}: "
+                    f"Connection references undefined zone(s): "
+                    f"{zone_a}, {zone_b}"
+                )
+            # Check for duplicate connections (a-b == b-a)
+            if any(
+                (c.zone_a == zone_a and c.zone_b == zone_b)
+                or (c.zone_a == zone_b and c.zone_b == zone_a)
+                for c in connections
+            ):
+                raise ValueError(
+                    f"Parsing error at line {index}: "
+                    f"Duplicate connection between {zone_a} and {zone_b}."
+                )
+            # Parse metadata if present
+            max_link_capacity = 1
+            if len(conn_parts) > 1:
+                metadata_part = " ".join(conn_parts[1:])
+                if (
+                    metadata_part.startswith("[")
+                    and metadata_part.endswith("]")
+                ):
+                    metadata_str = metadata_part[1:-1]
+                    metadata_items = metadata_str.split()
+                    for item in metadata_items:
+                        key, value = item.split("=")
+                        key, value = key.strip(), value.strip()
+                        if key == "max_link_capacity":
+                            max_link_capacity = int(value)
+                            if max_link_capacity <= 0:
+                                raise ValueError(
+                                    "max_link_capacity must be a "
+                                    "positive integer."
+                                )
+                        else:
+                            raise ValueError(
+                                f"Unknown connection metadata key: {key}"
+                            )
+                else:
+                    raise ValueError(
+                        f"Parsing error at line {index}: "
+                        "Connection metadata must be in brackets."
+                    )
+            connections.append(
+                Connection(
+                    zone_a=zone_a,
+                    zone_b=zone_b,
+                    max_link_capacity=max_link_capacity,
+                )
+            )
             continue
         # If we reach here, it's an unrecognized line format
         raise ValueError(
