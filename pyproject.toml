@@ -1,14 +1,20 @@
 [project]
-name = "fly-in"
-description = "Fly-in Python project"
-version = "0.1.0"
-authors = [{ name = "jhoban", email = "jhoban@42berlin.de" }]
+name = "fly_in"
+version = "1.0.0"
+description = "A drone navigation"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.10"
+dependencies = [
+    "pydantic>=2.11.0",
+]
 
-[project.optional-dependencies]
-dev = ["flake8==7.1.1", "mypy==1.11.2"]
+[dependency-groups]
+dev = [
+    "flake8>=7.2.0",
+    "mypy>=1.15.0",
+    "pytest>=8.0.0",
+]
 
-[build-system]
-requires = ["uv>=0.1.36"]
-build-backend = "uv.build"
+[tool.mypy]
+python_version = "3.10"
+exclude = "(^\\.venv/)"

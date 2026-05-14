@@ -2,8 +2,8 @@
 
 import argparse
 
-from fly_in.parser import parse_map_file
-from fly_in.simulator import run_simulation
+from src.parser import parse_map_file
+from src.simulator import run_simulation
 
 
 def build_parser() -> argparse.ArgumentParser:

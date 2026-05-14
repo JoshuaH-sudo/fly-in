@@ -1,31 +1,30 @@
+PYTHON := uv run python
 
-UV := uv
-VENV := .venv
-VENV_BIN := $(VENV)/bin
+.PHONY: install run debug test clean lint lint-strict
 
-.PHONY: install run debug clean lint lint-strict
+.venv:
+	uv venv .venv
 
-install:
-	$(UV) venv $(VENV)
-	$(VENV_BIN)/uv pip install --upgrade pip
-	$(VENV_BIN)/uv pip install -r requirements.txt -r requirements-dev.txt
+install: .venv
+	uv sync --dev
 
-run:
-	$(VENV_BIN)/python -m fly_in
+run: .venv
+	$(PYTHON) -m src
 
-debug:
-	$(VENV_BIN)/python -m pdb -m fly_in
+debug: .venv
+	$(PYTHON) -m pdb -m src
+
+test: .venv
+	$(PYTHON) -m pytest -q
 
 clean:
-	find . -type d -name '__pycache__' -prune -exec rm -rf {} +
-	find . -type d -name '.mypy_cache' -prune -exec rm -rf {} +
-	find . -type d -name '.pytest_cache' -prune -exec rm -rf {} +
-	find . -type f -name '*.pyc' -delete
+	find . \( -name __pycache__ -o -name .mypy_cache -o -name .pytest_cache -o -name .ruff_cache \) -type d -prune -exec rm -rf {} +
+	find . \( -name '*.pyc' -o -name '*.pyo' \) -type f -delete
 
-lint:
-	$(VENV_BIN)/flake8 .
-	$(VENV_BIN)/mypy . --warn-return-any --warn-unused-ignores --ignore-missing-imports --disallow-untyped-defs --check-untyped-defs
+lint: .venv
+	uv run flake8 src
+	uv run mypy src --warn-return-any --warn-unused-ignores --ignore-missing-imports --disallow-untyped-defs --check-untyped-defs
 
-lint-strict:
-	$(VENV_BIN)/flake8 .
-	$(VENV_BIN)/mypy . --strict
+lint-strict: .venv
+	uv run flake8 src
+	uv run mypy src --strict
