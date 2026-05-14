@@ -1,13 +1,14 @@
-PYTHON := python3
+
+UV := uv
 VENV := .venv
 VENV_BIN := $(VENV)/bin
 
 .PHONY: install run debug clean lint lint-strict
 
 install:
-	$(PYTHON) -m venv $(VENV)
-	$(VENV_BIN)/pip install --upgrade pip
-	$(VENV_BIN)/pip install -r requirements.txt -r requirements-dev.txt
+	$(UV) venv $(VENV)
+	$(VENV_BIN)/uv pip install --upgrade pip
+	$(VENV_BIN)/uv pip install -r requirements.txt -r requirements-dev.txt
 
 run:
 	$(VENV_BIN)/python -m fly_in
