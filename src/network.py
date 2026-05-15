@@ -18,10 +18,20 @@ class Network(BaseModel):
     zones: dict[str, Zone] = Field(default_factory=dict)
     zone_connections: dict[str, set[Zone]] = Field(default_factory=dict)
     connections: list[Connection] = Field(default_factory=list)
-    drones: list[Drone] = []
+    drones: list[Drone] = Field(default_factory=list)
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
+        zone_connections: dict[str, set[Zone]] = {
+            name: set() for name in self.zones
+        }
+        for connection in self.connections:
+            zone_a = self.get_zone(connection.zone_a)
+            zone_b = self.get_zone(connection.zone_b)
+            zone_connections[zone_a.name].add(zone_b)
+            zone_connections[zone_b.name].add(zone_a)
+        object.__setattr__(self, "zone_connections", zone_connections)
+
         # Initialize drones based on nb_drones
         start_zone = self.get_zone(self.start_hub)
         object.__setattr__(

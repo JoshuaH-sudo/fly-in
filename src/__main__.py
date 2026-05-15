@@ -3,6 +3,7 @@
 import argparse
 import os
 import sys
+from typing import Counter
 
 from src.map_menu import MapMenu
 from src.output_logger import OutputLogger
@@ -19,7 +20,7 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _print_simulation_output(turns: list[str]) -> None:
+def _print_simulation_output(turns: list[Counter[str]]) -> None:
     for turn_line in turns:
         print(turn_line)
 
@@ -54,11 +55,9 @@ def main() -> int:
         logger.print_map_error(selected_map, error)
         return 1
 
+    print(logger.format_network(network))
     turns = run_simulation(network)
-    if turns:
-        _print_simulation_output(turns)
-    else:
-        print(logger.format_network(network))
+    _print_simulation_output(turns)
     return 0
 
 
