@@ -137,7 +137,7 @@ def parse_map_file(path: str) -> Network:
             continue
         if line.startswith("connection:"):
             # Format: connection: <zone1>-<zone2> [metadata]
-            conn_parts = line[len("connection:") :].strip().split()
+            conn_parts = line[len("connection:"):].strip().split()
             if not conn_parts:
                 raise ValueError(
                     f"Parsing error at line {index}: "

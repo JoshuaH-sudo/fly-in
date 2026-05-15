@@ -6,10 +6,10 @@ import unittest
 
 
 class SmokeTest(unittest.TestCase):
-    """Validate the CLI skeleton starts successfully."""
+    """Validate the CLI starts and renders output successfully."""
 
     def test_module_runs_without_args(self) -> None:
-        """The module should run and print a startup message."""
+        """The module should run and print a parsed network summary."""
         result = subprocess.run(
             [sys.executable, "-m", "src"],
             check=False,
@@ -17,7 +17,7 @@ class SmokeTest(unittest.TestCase):
             text=True,
         )
         self.assertEqual(result.returncode, 0)
-        self.assertIn("Fly-in skeleton ready", result.stdout)
+        self.assertIn("Network Summary", result.stdout)
 
 
 if __name__ == "__main__":
