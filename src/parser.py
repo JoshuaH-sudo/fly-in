@@ -2,7 +2,8 @@
 
 from pydantic import ValidationError
 
-from src.models import Connection, Network, Zone, ZoneType
+from src.models import Connection, Zone, ZoneType
+from src.network import Network
 
 
 def parse_zone_definition(line: str) -> Zone:

@@ -2,7 +2,7 @@
 
 import enum
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, field_validator
 
 
 class ZoneType(enum.Enum):
@@ -72,33 +72,5 @@ class Connection(BaseModel):
     @classmethod
     def validate_max_link_capacity(cls, value: int) -> int:
         if value <= 0:
-            raise ValueError(
-                "max_link_capacity must be a positive integer."
-            )
-        return value
-
-
-class Network(BaseModel):
-    """Holds parsed map information."""
-
-    model_config = ConfigDict(frozen=True)
-
-    nb_drones: int = 0
-    start_hub: str = ""
-    end_hub: str = ""
-    zones: dict[str, Zone] = Field(default_factory=dict)
-    connections: list[Connection] = Field(default_factory=list)
-
-    @field_validator("nb_drones")
-    @classmethod
-    def validate_nb_drones(cls, value: int) -> int:
-        if value <= 0:
-            raise ValueError("nb_drones must be a positive integer.")
-        return value
-
-    @field_validator("start_hub", "end_hub")
-    @classmethod
-    def validate_hub_name(cls, value: str) -> str:
-        if not value:
-            raise ValueError("start_hub and end_hub must be defined.")
+            raise ValueError("max_link_capacity must be a positive integer.")
         return value

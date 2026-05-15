@@ -1,6 +1,7 @@
 """Simulation skeleton for Fly-in."""
 
-from src.models import Network
+
+from src.network import Network
 
 
 def run_simulation(network: Network) -> list[str]:
