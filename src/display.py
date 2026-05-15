@@ -38,7 +38,12 @@ class Display:
             drone.current_zone.name for drone in self.network.drones
         )
 
-    def draw(self, ax: Axes) -> None:
+    def draw(
+        self,
+        ax: Axes,
+        drone_counts: Counter[str] | None = None,
+        title: str = "Fly-in Graph Preview",
+    ) -> None:
         """Draw the network graph and drone counts on a matplotlib axis."""
         graph = nx.DiGraph()
         graph.add_nodes_from(self.network.zones.keys())
@@ -74,7 +79,9 @@ class Display:
             )
             for name in graph.nodes()
         ]
-        drone_counts = self._drone_counts()
+        counts = (
+            drone_counts if drone_counts is not None else self._drone_counts()
+        )
 
         edge_labels = {
             (zone_a, zone_b): f"cap={int(data['weight'])}"
@@ -109,7 +116,7 @@ class Display:
 
         for name, (x_pos, y_pos) in positions.items():
             label = name.replace("_", "\n")
-            count = drone_counts.get(name, 0)
+            count = counts.get(name, 0)
             label_with_drones = f"{label}\nDrones: {count}"
             fill_color = self._zone_color(self.network.zones[name])
             ax.text(
@@ -134,11 +141,47 @@ class Display:
 
         ax.grid(color="#d5d5d5", linewidth=1.2, alpha=0.8)
         ax.set_axis_on()
-        ax.set_title("Fly-in Graph Preview", fontsize=16)
+        ax.set_title(title, fontsize=16)
 
     def show(self) -> None:
         """Open a matplotlib window with the current network rendering."""
         _, ax = plt.subplots(figsize=(12.5, 6.5))
         self.draw(ax)
         plt.tight_layout()
+        plt.show()
+
+    def show_history(self, history: list[Counter[str]]) -> None:
+        """Render a turn history and browse with arrow keys."""
+        if not history:
+            return
+
+        figure, ax = plt.subplots(figsize=(12.5, 6.5))
+        current = [0]
+        total_steps = len(history)
+
+        def render_step() -> None:
+            step_index = current[0]
+            self.draw(
+                ax,
+                drone_counts=history[step_index],
+                title=(
+                    "Fly-in Graph Preview "
+                    f"(Step {step_index}/{total_steps - 1}, "
+                    "Left/Right to navigate)"
+                ),
+            )
+            figure.tight_layout()
+            figure.canvas.draw_idle()
+
+        def on_key(event: object) -> None:
+            key = getattr(event, "key", None)
+            if key in ("right", "down"):
+                current[0] = min(current[0] + 1, total_steps - 1)
+                render_step()
+            elif key in ("left", "up"):
+                current[0] = max(current[0] - 1, 0)
+                render_step()
+
+        figure.canvas.mpl_connect("key_press_event", on_key)
+        render_step()
         plt.show()

@@ -16,6 +16,7 @@ class Network(BaseModel):
     start_hub: str = ""
     end_hub: str = ""
     zones: dict[str, Zone] = Field(default_factory=dict)
+    zone_connections: dict[str, set[Zone]] = Field(default_factory=dict)
     connections: list[Connection] = Field(default_factory=list)
     drones: list[Drone] = []
 
@@ -46,7 +47,16 @@ class Network(BaseModel):
             raise ValueError("start_hub and end_hub must be defined.")
         return value
 
+    def get_zone_connections(self, zone_name: str) -> set[Zone]:
+        return self.zone_connections.get(zone_name, set())
+
     def get_zone(self, name: str) -> Zone:
         if name not in self.zones:
             raise ValueError(f"Zone '{name}' not found in the network.")
         return self.zones[name]
+
+    def all_drones_at_end(self) -> bool:
+        """Check if all drones have reached the end hub."""
+        return all(
+            drone.current_zone.name == self.end_hub for drone in self.drones
+        )
