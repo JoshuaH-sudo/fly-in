@@ -2,8 +2,9 @@
 
 from pydantic import ValidationError
 
-from src.models import Connection, Zone, ZoneType
+from src.connection import Connection
 from src.network import Network
+from src.zone import Zone, ZoneType
 
 
 def parse_zone_definition(line: str) -> Zone:
@@ -136,7 +137,7 @@ def parse_map_file(path: str) -> Network:
             continue
         if line.startswith("connection:"):
             # Format: connection: <zone1>-<zone2> [metadata]
-            conn_parts = line[len("connection:"):].strip().split()
+            conn_parts = line[len("connection:") :].strip().split()
             if not conn_parts:
                 raise ValueError(
                     f"Parsing error at line {index}: "
@@ -171,9 +172,8 @@ def parse_map_file(path: str) -> Network:
             max_link_capacity = 1
             if len(conn_parts) > 1:
                 metadata_part = " ".join(conn_parts[1:])
-                if (
-                    metadata_part.startswith("[")
-                    and metadata_part.endswith("]")
+                if metadata_part.startswith("[") and metadata_part.endswith(
+                    "]"
                 ):
                     metadata_str = metadata_part[1:-1]
                     metadata_items = metadata_str.split()

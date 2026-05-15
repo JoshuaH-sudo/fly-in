@@ -11,7 +11,7 @@ class SmokeTest(unittest.TestCase):
     def test_module_runs_without_args(self) -> None:
         """The module should run and print a startup message."""
         result = subprocess.run(
-            [sys.executable, "-m", "fly_in"],
+            [sys.executable, "-m", "src"],
             check=False,
             capture_output=True,
             text=True,

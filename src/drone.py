@@ -1,22 +1,18 @@
-from src.models import Zone
-from src.network import Network
+from src.zone import Zone
 
 
 class Drone:
     name: str
-    network: Network
     current_zone: Zone
+    action_log: list[str] = []
 
-    def __init__(self, name: str, network: Network):
+    def __init__(self, name: str, current_zone: Zone):
         self.name = name
-        self.network = network
-        self.current_zone = self.network.get_zone(
-            "start"
-        )  # Start at the "start" zone
+        self.current_zone = current_zone
 
     def move(self, target_zone: Zone):
-        if target_zone.name not in self.network.zones:
-            raise ValueError(
-                f"Target zone '{target_zone.name}' not found in the network."
-            )
         self.current_zone = target_zone
+        self.action_log.append(f"Moved to {target_zone.name}")
+
+    def wait(self):
+        self.action_log.append("Waited")

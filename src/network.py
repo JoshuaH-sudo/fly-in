@@ -2,14 +2,15 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from src.connection import Connection
 from src.drone import Drone
-from src.models import Connection, Zone
+from src.zone import Zone
 
 
 class Network(BaseModel):
     """Holds parsed map information."""
 
-    model_config = ConfigDict(frozen=True)
+    model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
 
     nb_drones: int = 0
     start_hub: str = ""
@@ -21,10 +22,15 @@ class Network(BaseModel):
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         # Initialize drones based on nb_drones
-        self.drones = [
-            Drone(name=f"drone_{i+1}", network=self)
-            for i in range(self.nb_drones)
-        ]
+        start_zone = self.get_zone(self.start_hub)
+        object.__setattr__(
+            self,
+            "drones",
+            [
+                Drone(name=f"drone_{i+1}", current_zone=start_zone)
+                for i in range(self.nb_drones)
+            ],
+        )
 
     @field_validator("nb_drones")
     @classmethod

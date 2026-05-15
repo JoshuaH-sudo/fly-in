@@ -4,8 +4,10 @@ import argparse
 import os
 import sys
 
-from src.models import Connection, Network, Zone
+from src.connection import Connection
+from src.network import Network
 from src.parser import parse_map_file
+from src.zone import Zone
 
 
 def build_parser() -> argparse.ArgumentParser:
