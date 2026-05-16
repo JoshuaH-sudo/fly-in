@@ -97,6 +97,8 @@ class Display:
             dx_px: float,
             dy_px: float,
         ) -> tuple[float, float]:
+            # Work in pixel space so drone spacing stays visually consistent
+            # regardless of axis limits or map coordinate scale.
             base_px = ax.transData.transform((x_center, y_center))
             target_px = (base_px[0] + dx_px, base_px[1] + dy_px)
             data_x, data_y = ax.transData.inverted().transform(target_px)
@@ -144,6 +146,8 @@ class Display:
                 math.hypot(x_off, y_off) for x_off, y_off in offsets
             )
             if furthest > max_radius_px > 0:
+                # Scale the cluster back into the node to avoid drifting away
+                # when many drones share one zone.
                 scale = max_radius_px / furthest
                 offsets = [
                     (x_off * scale, y_off * scale)

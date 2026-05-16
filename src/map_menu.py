@@ -229,6 +229,8 @@ class MapMenu:
         ordered_categories = self._ordered_categories(by_category)
 
         if not sys.stdin.isatty():
+            # Keep CI/headless runs deterministic by selecting from the
+            # preferred category order (easy first) instead of raw discovery.
             first_category = ordered_categories[0]
             first_options = sorted(
                 by_category[first_category],
@@ -237,11 +239,13 @@ class MapMenu:
             return first_options[0].path
 
         try:
+            # Use the richer terminal UI when available.
             return self._choose_with_terminal_menu(
                 ordered_categories,
                 by_category,
             )
         except (ImportError, OSError):
+            # Fall back to plain prompts for unsupported terminals.
             return self._choose_with_numeric_prompt(
                 ordered_categories,
                 by_category,

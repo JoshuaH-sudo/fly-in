@@ -41,15 +41,18 @@ def _next_step_towards_end(
     neighbors = network.get_zone_neighbors(current_zone)
     for neighbor in sorted(neighbors, key=lambda zone: zone.name):
         if neighbor.name == network.end_hub:
+            # Always prioritize direct delivery when reachable.
             return neighbor
         if (
             neighbor.zone_type == ZoneType.PRIORITY
             and neighbor.current_drones >= neighbor.max_drones
         ):
+            # Priority zones are intentionally favored in route choice.
             return neighbor
         if neighbor.zone_type == ZoneType.BLOCKED:
             continue
         if neighbor.name in drone.visited_zones:
+            # Avoid immediate loops with this simple local heuristic.
             continue
         if neighbor.current_drones >= neighbor.max_drones:
             continue

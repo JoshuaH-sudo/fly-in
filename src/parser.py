@@ -243,8 +243,10 @@ def _parse_zone_like_line(
     # Normalize all variants to the same zone parser.
     zone = parse_zone_definition(f"zone: {rest}")
     if kind == "start_hub":
+        # Force semantic role even if metadata tried to set another type.
         zone = zone.model_copy(update={"zone_type": ZoneType.START})
     elif kind == "end_hub":
+        # End hub must keep special behavior (unbounded occupancy handling).
         zone = zone.model_copy(update={"zone_type": ZoneType.END})
 
     if zone.name in zones:
@@ -313,6 +315,7 @@ def parse_map_file(path: str) -> Network:
             or line.startswith("end_hub:")
             or line.startswith("hub:")
             or line.startswith("zone:")
+            # Treat a-b and b-a as the same undirected link.
         ):
             start_hub, end_hub = _parse_zone_like_line(
                 line,
