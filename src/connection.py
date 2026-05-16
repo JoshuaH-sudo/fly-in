@@ -2,10 +2,12 @@
 
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import ConfigDict, field_validator
+
+from src.drone_occupancy import DroneOccupancy
 
 
-class Connection(BaseModel):
+class Connection(DroneOccupancy):
     """Represents a bidirectional connection between two zones."""
 
     model_config = ConfigDict(frozen=True)
@@ -14,7 +16,6 @@ class Connection(BaseModel):
     zone_a: str
     zone_b: str
     max_link_capacity: int = 1
-    current_drones: int = 0
 
     @field_validator("zone_a", "zone_b")
     @classmethod
@@ -62,15 +63,23 @@ class Connection(BaseModel):
         super().__init__(**kwds)
         object.__setattr__(self, "name", f"{self.zone_a}<->{self.zone_b}")
 
-    def hold_drone(self) -> None:
-        """Reserve one traversal slot on this connection.
+    @property
+    def capacity_limit(self) -> int:
+        """Return this connection traversal capacity.
 
         Returns:
-            None.
+            Maximum drones allowed on the connection simultaneously.
         """
-        if self.current_drones >= self.max_link_capacity:
-            raise ValueError(f"Connection {self.name} is at full capacity.")
-        object.__setattr__(self, "current_drones", self.current_drones + 1)
+        return self.max_link_capacity
+
+    @property
+    def occupancy_label(self) -> str:
+        """Return label used in occupancy capacity errors.
+
+        Returns:
+            Human-readable connection label.
+        """
+        return f"Connection {self.name}"
 
     def leave_drone(self) -> None:
         """Release one traversal slot when at least one drone is present.
@@ -78,5 +87,4 @@ class Connection(BaseModel):
         Returns:
             None.
         """
-        if self.current_drones > 0:
-            object.__setattr__(self, "current_drones", self.current_drones - 1)
+        super().leave_drone()

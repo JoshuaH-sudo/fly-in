@@ -1,7 +1,9 @@
 """Zone model for Fly-in."""
 
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import ConfigDict, field_validator
 import enum
+
+from src.drone_occupancy import DroneOccupancy
 
 
 class ZoneType(enum.Enum):
@@ -44,7 +46,7 @@ class ZoneType(enum.Enum):
         return 1
 
 
-class Zone(BaseModel):
+class Zone(DroneOccupancy):
     """Represents a single zone/hub in the map."""
 
     model_config = ConfigDict(frozen=True)
@@ -104,24 +106,31 @@ class Zone(BaseModel):
             raise ValueError("color must be a single word when provided.")
         return value
 
-    def hold_drone(self) -> None:
-        """Reserve one occupancy slot in this zone.
+    @property
+    def capacity_limit(self) -> int:
+        """Return this zone occupancy capacity.
 
         Returns:
-            None.
+            Maximum number of drones this zone can hold.
         """
-        if self.current_drones >= self.max_drones and self.zone_type not in {
+        return self.max_drones
+
+    @property
+    def occupancy_label(self) -> str:
+        """Return label used in occupancy capacity errors.
+
+        Returns:
+            Human-readable zone label.
+        """
+        return f"Zone {self.name}"
+
+    def allows_capacity_bypass(self) -> bool:
+        """Allow bypass for special start and end hubs.
+
+        Returns:
+            ``True`` for start/end hubs; ``False`` otherwise.
+        """
+        return self.zone_type in {
             ZoneType.START,
             ZoneType.END,
-        }:
-            raise ValueError(f"Zone {self.name} is at full capacity.")
-        object.__setattr__(self, "current_drones", self.current_drones + 1)
-
-    def leave_drone(self) -> None:
-        """Release one occupancy slot when at least one drone is present.
-
-        Returns:
-            None.
-        """
-        if self.current_drones > 0:
-            object.__setattr__(self, "current_drones", self.current_drones - 1)
+        }
