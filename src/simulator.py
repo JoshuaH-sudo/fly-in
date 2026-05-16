@@ -2,43 +2,49 @@
 
 from collections import deque
 
+from src.connection import Connection
 from src.display import Display
+from src.drone import Drone
 from src.network import Network
-from src.zone import ZoneType
+from src.zone import Zone, ZoneType
 
 
 def _snapshot_drone_positions(network: Network) -> dict[str, str]:
     """Capture each drone's current zone for history rendering."""
-    return {
-        drone.name: drone.current_pos.name for drone in network.drones
-    }
+    return {drone.name: drone.current_pos.name for drone in network.drones}
 
 
 def _next_step_towards_end(
+    drone: Drone,
     network: Network,
-    current_zone_name: str,
-) -> str | None:
+    current_zone: Zone | Connection,
+) -> Zone | Connection | None:
     """Return the next zone name on a shortest path to end_hub."""
-    if current_zone_name == network.end_hub:
+    if current_zone.name == network.end_hub:
         return None
 
-    visited: set[str] = {current_zone_name}
-    queue: deque[tuple[str, list[str]]] = deque([(current_zone_name, [])])
-
-    while queue:
-        zone_name, path = queue.popleft()
-        if zone_name == network.end_hub:
-            return path[0] if path else None
-
-        neighbors = network.get_zone_connections(zone_name)
-        for neighbor in sorted(neighbors, key=lambda zone: zone.name):
-            if neighbor.zone_type == ZoneType.BLOCKED:
-                continue
-            if neighbor.name in visited:
-                continue
-            visited.add(neighbor.name)
-            queue.append((neighbor.name, path + [neighbor.name]))
-
+    neighbors = network.get_zone_neighbors(current_zone)
+    for neighbor in sorted(neighbors, key=lambda zone: zone.name):
+        if neighbor.name == network.end_hub:
+            return neighbor
+        if neighbor.zone_type == ZoneType.BLOCKED:
+            continue
+        if neighbor.name in drone.visited_zones:
+            continue
+        if neighbor.current_drones >= neighbor.max_drones:
+            continue
+        if neighbor.zone_type == ZoneType.RESTRICTED:
+            # return connection to restricted zone to indicate waiting on it
+            for connection in network.connections:
+                if (
+                    connection.zone_a == current_zone.name
+                    and connection.zone_b == neighbor.name
+                ) or (
+                    connection.zone_b == current_zone.name
+                    and connection.zone_a == neighbor.name
+                ):
+                    return connection
+        return neighbor
     return None
 
 
@@ -50,16 +56,16 @@ def run_simulation(network: Network) -> list[dict[str, str]]:
     while not network.all_drones_at_end():
         moved_this_turn = False
         for drone in network.drones:
-            next_zone_name = _next_step_towards_end(
+            next_zone = _next_step_towards_end(
+                drone,
                 network,
-                drone.current_pos.name,
+                drone.current_pos,
             )
-            if next_zone_name is None:
+            if next_zone is None:
                 drone.wait()
                 continue
 
-            target_zone = network.get_zone(next_zone_name)
-            drone.move(target_zone)
+            drone.move(next_zone)
             moved_this_turn = True
 
         if not moved_this_turn:

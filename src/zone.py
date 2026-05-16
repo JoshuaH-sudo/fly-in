@@ -40,6 +40,7 @@ class Zone(BaseModel):
     zone_type: ZoneType
     color: str | None = None
     max_drones: int = ZoneType.NORMAL.default_max_drones
+    current_drones: int = 0
 
     @field_validator("name")
     @classmethod
@@ -63,3 +64,8 @@ class Zone(BaseModel):
         if value is not None and (not value or " " in value):
             raise ValueError("color must be a single word when provided.")
         return value
+
+    def hold_drone(self) -> None:
+        if self.current_drones >= self.max_drones:
+            raise ValueError(f"Zone {self.name} is at full capacity.")
+        object.__setattr__(self, "current_drones", self.current_drones + 1)

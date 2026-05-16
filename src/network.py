@@ -57,8 +57,13 @@ class Network(BaseModel):
             raise ValueError("start_hub and end_hub must be defined.")
         return value
 
-    def get_zone_connections(self, zone_name: str) -> set[Zone]:
-        return self.zone_connections.get(zone_name, set())
+    def get_zone_neighbors(self, position: Zone | Connection) -> set[Zone]:
+        """Return the set of zones directly connected to the given position."""
+        if isinstance(position, Connection):
+            # For a connection, return the next zones on the other side
+            return self.zone_connections.get(position.zone_b, set())
+        # For a zone, return its directly connected neighbors
+        return self.zone_connections.get(position.name, set())
 
     def get_zone(self, name: str) -> Zone:
         if name not in self.zones:
