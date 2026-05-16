@@ -54,8 +54,11 @@ def test_start_and_end_hubs_are_assigned_special_zone_types(
 
     network = parse_map_file(str(map_path))
 
-    assert network.get_zone("start").zone_type == ZoneType.START
-    assert network.get_zone("goal").zone_type == ZoneType.END
+    start = network.get_position("start")
+    goal = network.get_position("goal")
+
+    assert start.zone_type == ZoneType.START
+    assert goal.zone_type == ZoneType.END
 
 
 def test_duplicate_connections_are_rejected(tmp_path: Path) -> None:

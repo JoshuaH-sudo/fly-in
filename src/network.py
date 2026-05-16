@@ -31,14 +31,20 @@ class Network(BaseModel):
             name: set() for name in self.zones
         }
         for connection in self.connections:
-            zone_a = self.get_zone(connection.zone_a)
-            zone_b = self.get_zone(connection.zone_b)
+            zone_a = self.get_position(connection.zone_a)
+            zone_b = self.get_position(connection.zone_b)
+            if not isinstance(zone_a, Zone) or not isinstance(zone_b, Zone):
+                raise ValueError(
+                    "Connections must reference existing zones."
+                )
             zone_connections[zone_a.name].add(zone_b)
             zone_connections[zone_b.name].add(zone_a)
         object.__setattr__(self, "zone_connections", zone_connections)
 
         # Initialize drones based on nb_drones
-        start_zone = self.get_zone(self.start_hub)
+        start_zone = self.get_position(self.start_hub)
+        if not isinstance(start_zone, Zone):
+            raise ValueError("start_hub must reference a valid zone.")
         object.__setattr__(
             self,
             "drones",
@@ -89,25 +95,44 @@ class Network(BaseModel):
         """
         if isinstance(position, Connection):
             # For a connection, return the next zones on the other side
+            zone_a = self.get_position(position.zone_a)
+            zone_b = self.get_position(position.zone_b)
+            if not isinstance(zone_a, Zone) or not isinstance(zone_b, Zone):
+                raise ValueError(
+                    "Connection endpoints must resolve to zones."
+                )
             return {
-                self.get_zone(position.zone_a),
-                self.get_zone(position.zone_b),
+                zone_a,
+                zone_b,
             }
         # For a zone, return its directly connected neighbors
         return self.zone_connections.get(position.name, set())
 
-    def get_zone(self, name: str) -> Zone:
-        """Return one zone by name.
+    def get_position(
+        self,
+        position: str | Zone | Connection,
+    ) -> Zone | Connection:
+        """Return one position by name or pass through an existing position.
 
         Args:
-            name: Zone identifier.
+            position: Zone/connection name or existing position object.
 
         Returns:
-            Matching zone object.
+            Matching zone/connection object.
         """
-        if name not in self.zones:
-            raise ValueError(f"Zone '{name}' not found in the network.")
-        return self.zones[name]
+        if isinstance(position, (Zone, Connection)):
+            return position
+
+        if position in self.zones:
+            return self.zones[position]
+
+        for connection in self.connections:
+            if connection.name == position:
+                return connection
+
+        raise ValueError(
+            f"Position '{position}' not found in the network."
+        )
 
     def all_drones_at_end(self) -> bool:
         """Check if all drones have reached the end hub.
