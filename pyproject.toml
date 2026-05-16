@@ -17,8 +17,14 @@ dev = [
     "flake8>=7.2.0",
     "mypy>=1.15.0",
     "pytest>=8.0.0",
+    "types-networkx>=3.5.0.20251001",
 ]
 
 [tool.mypy]
 python_version = "3.10"
 exclude = "(^\\.venv/)"
+
+[[tool.mypy.overrides]]
+# simple_term_menu library doesn't have type hints, so ignore missing imports for it
+module = ["simple_term_menu"]
+ignore_missing_imports = true

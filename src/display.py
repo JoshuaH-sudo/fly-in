@@ -173,7 +173,7 @@ class Display:
         title: str = "Fly-in Graph Preview",
     ) -> None:
         """Draw the network graph and drone counts on a matplotlib axis."""
-        graph = nx.DiGraph()
+        graph: nx.DiGraph[str] = nx.DiGraph()
         graph.add_nodes_from(self.network.zones.keys())
 
         for connection in self.network.connections:
