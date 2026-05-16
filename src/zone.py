@@ -134,3 +134,11 @@ class Zone(DroneOccupancy):
             ZoneType.START,
             ZoneType.END,
         }
+
+    def __hash__(self) -> int:
+        """Return a stable hash for use in sets and dictionary keys.
+
+        Returns:
+            Hash derived from the unique zone name.
+        """
+        return hash(self.name)

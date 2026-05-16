@@ -89,7 +89,10 @@ class Network(BaseModel):
         """
         if isinstance(position, Connection):
             # For a connection, return the next zones on the other side
-            return self.zone_connections.get(position.zone_b, set())
+            return {
+                self.get_zone(position.zone_a),
+                self.get_zone(position.zone_b),
+            }
         # For a zone, return its directly connected neighbors
         return self.zone_connections.get(position.name, set())
 
