@@ -156,8 +156,41 @@ class Display:
 
             return offsets
 
+        def position_center(
+            position_name: str,
+        ) -> tuple[float, float] | None:
+            """Return a draw center for a zone or in-flight connection.
+
+            Args:
+                position_name: Zone or connection name.
+
+            Returns:
+                Data coordinates for rendering, or ``None`` if unresolved.
+            """
+            if position_name in positions:
+                x_pos, y_pos = positions[position_name]
+                return float(x_pos), float(y_pos)
+
+            try:
+                position = self.network.get_position(position_name)
+            except ValueError:
+                return None
+            if isinstance(position, Zone):
+                x_pos, y_pos = positions[position.name]
+                return float(x_pos), float(y_pos)
+
+            zone_a_x, zone_a_y = positions[position.zone_a]
+            zone_b_x, zone_b_y = positions[position.zone_b]
+            return (
+                float(zone_a_x + zone_b_x) / 2.0,
+                float(zone_a_y + zone_b_y) / 2.0,
+            )
+
         for zone_name, drone_names in drones_by_zone.items():
-            x_pos, y_pos = positions[zone_name]
+            center = position_center(zone_name)
+            if center is None:
+                continue
+            x_pos, y_pos = center
             count = len(drone_names)
             sorted_names = sorted(drone_names)
             zone_size = float(node_sizes.get(zone_name, 4600))

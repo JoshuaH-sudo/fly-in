@@ -8,6 +8,7 @@ import pytest
 from src.map_menu import MapMenu, MapOption
 from src.parser import parse_map_file, parse_zone_definition
 import src.simulator as simulator_module
+from src.display import Display
 from src.zone import ZoneType
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -137,3 +138,25 @@ def test_run_simulation_render_mode_calls_display(
     simulator_module.run_simulation(network, render_history=True)
 
     assert calls["count"] == 1
+
+
+def test_display_accepts_connection_positions_in_history() -> None:
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    network = parse_map_file(str(ROOT / "maps/medium/02_circular_loop.txt"))
+    display = Display(network)
+    connection_name = "loop_b<->exit_point"
+
+    figure, ax = plt.subplots(figsize=(8, 4))
+    display.draw(
+        ax,
+        drone_positions={
+            "drone_1": connection_name,
+            "drone_2": "loop_a",
+        },
+        title="Connection Position Rendering",
+    )
+    plt.close(figure)
