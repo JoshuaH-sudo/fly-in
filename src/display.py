@@ -1,4 +1,5 @@
-from collections import Counter
+from collections import Counter, defaultdict
+from collections.abc import Mapping
 
 import matplotlib.pyplot as plt
 import networkx as nx
@@ -38,10 +39,76 @@ class Display:
             drone.current_zone.name for drone in self.network.drones
         )
 
+    def _drone_label(self, drone_name: str) -> str:
+        """Format an internal drone name as user-facing label D n."""
+        if drone_name.startswith("drone_"):
+            return f"D{drone_name.split('_', maxsplit=1)[1]}"
+        return drone_name
+
+    def _draw_drones(
+        self,
+        ax: Axes,
+        positions: Mapping[str, tuple[float | int, float | int]],
+        drone_positions: Mapping[str, str] | None = None,
+    ) -> None:
+        """Draw each drone as a small diamond around its current zone."""
+        drones_by_zone: dict[str, list[str]] = defaultdict(list)
+        if drone_positions is None:
+            for drone in self.network.drones:
+                drones_by_zone[drone.current_zone.name].append(drone.name)
+        else:
+            for drone_name, zone_name in drone_positions.items():
+                drones_by_zone[zone_name].append(drone_name)
+
+        for zone_name, drone_names in drones_by_zone.items():
+            x_pos, y_pos = positions[zone_name]
+            count = len(drone_names)
+            sorted_names = sorted(drone_names)
+
+            if count == 1:
+                placements = [(x_pos, y_pos, sorted_names[0])]
+            else:
+                cols = min(3, count)
+                rows = (count + cols - 1) // cols
+                spacing = 0.18
+                start_x = x_pos - spacing * (cols - 1) / 2
+                start_y = y_pos + spacing * (rows - 1) / 2
+                placements = []
+                for index, drone_name in enumerate(sorted_names):
+                    row = index // cols
+                    col = index % cols
+                    drone_x = start_x + col * spacing
+                    drone_y = start_y - row * spacing
+                    placements.append((drone_x, drone_y, drone_name))
+
+            for drone_x, drone_y, drone_name in placements:
+
+                ax.scatter(
+                    drone_x,
+                    drone_y,
+                    s=200,
+                    marker="D",
+                    c="#ffffff",
+                    edgecolors="#1f1f1f",
+                    linewidths=1.5,
+                    zorder=5,
+                )
+                ax.text(
+                    drone_x,
+                    drone_y,
+                    self._drone_label(drone_name),
+                    ha="center",
+                    va="center",
+                    fontsize=8,
+                    color="#111111",
+                    zorder=6,
+                )
+
     def draw(
         self,
         ax: Axes,
         drone_counts: Counter[str] | None = None,
+        drone_positions: Mapping[str, str] | None = None,
         title: str = "Fly-in Graph Preview",
     ) -> None:
         """Draw the network graph and drone counts on a matplotlib axis."""
@@ -116,18 +183,26 @@ class Display:
 
         for name, (x_pos, y_pos) in positions.items():
             label = name.replace("_", "\n")
-            count = counts.get(name, 0)
-            label_with_drones = f"{label}\nDrones: {count}"
+            label_text = (
+                f"{label}\nDrones: {counts.get(name, 0)}"
+                if drone_counts is not None and drone_positions is None
+                else label
+            )
             fill_color = self._zone_color(self.network.zones[name])
             ax.text(
                 x_pos,
                 y_pos,
-                label_with_drones,
+                label_text,
                 ha="center",
                 va="center",
                 fontsize=10,
                 color=self.readable_text_color(fill_color),
             )
+
+        if drone_positions is not None:
+            self._draw_drones(ax, positions, drone_positions=drone_positions)
+        elif drone_counts is None:
+            self._draw_drones(ax, positions)
 
         nx.draw_networkx_edge_labels(
             graph,
@@ -150,7 +225,7 @@ class Display:
         plt.tight_layout()
         plt.show()
 
-    def show_history(self, history: list[Counter[str]]) -> None:
+    def show_history(self, history: list[dict[str, str]]) -> None:
         """Render a turn history and browse with arrow keys."""
         if not history:
             return
@@ -163,7 +238,7 @@ class Display:
             step_index = current[0]
             self.draw(
                 ax,
-                drone_counts=history[step_index],
+                drone_positions=history[step_index],
                 title=(
                     "Fly-in Graph Preview "
                     f"(Step {step_index}/{total_steps - 1}, "

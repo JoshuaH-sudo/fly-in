@@ -13,6 +13,13 @@ def _snapshot_drone_counts(network: Network) -> Counter[str]:
     return Counter(drone.current_zone.name for drone in network.drones)
 
 
+def _snapshot_drone_positions(network: Network) -> dict[str, str]:
+    """Capture each drone's current zone for history rendering."""
+    return {
+        drone.name: drone.current_zone.name for drone in network.drones
+    }
+
+
 def _next_step_towards_end(
     network: Network,
     current_zone_name: str,
@@ -43,6 +50,9 @@ def _next_step_towards_end(
 
 def run_simulation(network: Network) -> list[Counter[str]]:
     history: list[Counter[str]] = [_snapshot_drone_counts(network)]
+    position_history: list[dict[str, str]] = [
+        _snapshot_drone_positions(network)
+    ]
 
     while not network.all_drones_at_end():
         moved_this_turn = False
@@ -66,6 +76,7 @@ def run_simulation(network: Network) -> list[Counter[str]]:
             )
 
         history.append(_snapshot_drone_counts(network))
+        position_history.append(_snapshot_drone_positions(network))
 
-    Display(network).show_history(history)
+    Display(network).show_history(position_history)
     return history
