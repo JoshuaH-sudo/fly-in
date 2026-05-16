@@ -109,7 +109,7 @@ def _parse_connection_definition(
     existing_connections: list[Connection],
 ) -> Connection:
     """Parse and validate one connection definition line."""
-    conn_parts = line[len("connection:") :].strip().split()
+    conn_parts = line[len("connection:"):].strip().split()
     if not conn_parts:
         raise ValueError(
             f"Parsing error at line {index}: Empty connection definition."
@@ -145,7 +145,10 @@ def _parse_connection_definition(
     max_link_capacity = 1
     if len(conn_parts) > 1:
         metadata_part = " ".join(conn_parts[1:])
-        if not metadata_part.startswith("[") or not metadata_part.endswith("]"):
+        if (
+            not metadata_part.startswith("[")
+            or not metadata_part.endswith("]")
+        ):
             raise ValueError(
                 f"Parsing error at line {index}: "
                 "Connection metadata must be in brackets."
@@ -183,6 +186,11 @@ def _parse_zone_like_line(
 
     # Normalize all variants to the same zone parser.
     zone = parse_zone_definition(f"zone: {rest}")
+    if kind == "start_hub":
+        zone = zone.model_copy(update={"zone_type": ZoneType.START})
+    elif kind == "end_hub":
+        zone = zone.model_copy(update={"zone_type": ZoneType.END})
+
     if zone.name in zones:
         raise ValueError(
             f"Parsing error at line {index}: "

@@ -9,6 +9,8 @@ class ZoneType(enum.Enum):
     BLOCKED = "blocked"
     RESTRICTED = "restricted"
     PRIORITY = "priority"
+    START = "start"
+    END = "end"
 
     @property
     def movement_cost(self) -> int:
@@ -66,6 +68,13 @@ class Zone(BaseModel):
         return value
 
     def hold_drone(self) -> None:
-        if self.current_drones >= self.max_drones:
+        if self.current_drones >= self.max_drones and self.zone_type not in {
+            ZoneType.START,
+            ZoneType.END,
+        }:
             raise ValueError(f"Zone {self.name} is at full capacity.")
         object.__setattr__(self, "current_drones", self.current_drones + 1)
+
+    def leave_drone(self) -> None:
+        if self.current_drones > 0:
+            object.__setattr__(self, "current_drones", self.current_drones - 1)

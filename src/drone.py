@@ -15,12 +15,16 @@ class Drone:
         self.visited_zones = {current_zone.name}
 
     def move(self, target_zone: Zone | Connection) -> None:
+        self.current_pos.leave_drone()
         self.current_pos = target_zone
+        target_zone.hold_drone()
+        self.visited_zones.add(target_zone.name)
+
         if isinstance(target_zone, Zone):
-            self.visited_zones.add(target_zone.name)
             self.action_log.append(f"Moved to {target_zone.name}")
         elif isinstance(target_zone, Connection):
-            self.action_log.append(f"Moved to connection: {target_zone.zone_a} <-> {target_zone.zone_b}")
+            self.action_log.append(f"Moved to connection: \
+                {target_zone.zone_a} <-> {target_zone.zone_b}")
 
     def wait(self) -> None:
         self.action_log.append(f"Waited on {self.current_pos.name}")

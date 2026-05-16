@@ -1,7 +1,5 @@
 """Simulation skeleton for Fly-in."""
 
-from collections import deque
-
 from src.connection import Connection
 from src.display import Display
 from src.drone import Drone

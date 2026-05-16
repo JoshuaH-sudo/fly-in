@@ -14,6 +14,7 @@ class Connection(BaseModel):
     zone_a: str
     zone_b: str
     max_link_capacity: int = 1
+    current_drones: int = 0
 
     @field_validator("zone_a", "zone_b")
     @classmethod
@@ -39,3 +40,12 @@ class Connection(BaseModel):
     ) -> None:
         super().__init__(**kwds)
         object.__setattr__(self, "name", f"{self.zone_a}<->{self.zone_b}")
+
+    def hold_drone(self) -> None:
+        if self.current_drones >= self.max_link_capacity:
+            raise ValueError(f"Connection {self.name} is at full capacity.")
+        object.__setattr__(self, "current_drones", self.current_drones + 1)
+
+    def leave_drone(self) -> None:
+        if self.current_drones > 0:
+            object.__setattr__(self, "current_drones", self.current_drones - 1)
