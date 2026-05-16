@@ -10,6 +10,24 @@ class ZoneType(enum.Enum):
     RESTRICTED = "restricted"
     PRIORITY = "priority"
 
+    @property
+    def movement_cost(self) -> int:
+        """Return movement cost in turns when entering this zone type."""
+        if self is ZoneType.RESTRICTED:
+            return 2
+        if self is ZoneType.BLOCKED:
+            raise ValueError("Blocked zones cannot be entered.")
+        return 1
+
+    @property
+    def default_max_drones(self) -> int:
+        """Return default zone capacity for this zone type."""
+        if self is ZoneType.BLOCKED:
+            return 0
+        if self is ZoneType.PRIORITY:
+            return 2
+        return 1
+
 
 class Zone(BaseModel):
     """Represents a single zone/hub in the map."""
@@ -21,7 +39,7 @@ class Zone(BaseModel):
     y: int
     zone_type: ZoneType
     color: str | None = None
-    max_drones: int = 1
+    max_drones: int = ZoneType.NORMAL.default_max_drones
 
     @field_validator("name")
     @classmethod
@@ -35,8 +53,8 @@ class Zone(BaseModel):
     @field_validator("max_drones")
     @classmethod
     def validate_max_drones(cls, value: int) -> int:
-        if value <= 0:
-            raise ValueError("max_drones must be a positive integer.")
+        if value < 0:
+            raise ValueError("max_drones must be a non-negative integer.")
         return value
 
     @field_validator("color")
