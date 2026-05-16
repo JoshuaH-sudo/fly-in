@@ -10,7 +10,7 @@ from src.zone import ZoneType
 def _snapshot_drone_positions(network: Network) -> dict[str, str]:
     """Capture each drone's current zone for history rendering."""
     return {
-        drone.name: drone.current_zone.name for drone in network.drones
+        drone.name: drone.current_pos.name for drone in network.drones
     }
 
 
@@ -52,7 +52,7 @@ def run_simulation(network: Network) -> list[dict[str, str]]:
         for drone in network.drones:
             next_zone_name = _next_step_towards_end(
                 network,
-                drone.current_zone.name,
+                drone.current_pos.name,
             )
             if next_zone_name is None:
                 drone.wait()

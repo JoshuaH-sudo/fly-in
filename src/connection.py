@@ -1,5 +1,7 @@
 """Connection model for Fly-in."""
 
+from typing import Any
+
 from pydantic import BaseModel, ConfigDict, field_validator
 
 
@@ -8,6 +10,7 @@ class Connection(BaseModel):
 
     model_config = ConfigDict(frozen=True)
 
+    name: str = ""
     zone_a: str
     zone_b: str
     max_link_capacity: int = 1
@@ -29,3 +32,10 @@ class Connection(BaseModel):
         if value <= 0:
             raise ValueError("max_link_capacity must be a positive integer.")
         return value
+
+    def __init__(
+        self,
+        **kwds: Any,
+    ) -> None:
+        super().__init__(**kwds)
+        object.__setattr__(self, "name", f"{self.zone_a}<->{self.zone_b}")

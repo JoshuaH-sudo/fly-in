@@ -1,7 +1,5 @@
 """Zone model for Fly-in."""
 
-from typing import Any
-
 from pydantic import BaseModel, ConfigDict, field_validator
 import enum
 

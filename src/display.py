@@ -36,7 +36,7 @@ class Display:
     def _drone_counts(self) -> Counter[str]:
         """Count how many drones are currently in each zone."""
         return Counter(
-            drone.current_zone.name for drone in self.network.drones
+            drone.current_pos.name for drone in self.network.drones
         )
 
     def _drone_label(self, drone_name: str) -> str:
@@ -55,7 +55,7 @@ class Display:
         drones_by_zone: dict[str, list[str]] = defaultdict(list)
         if drone_positions is None:
             for drone in self.network.drones:
-                drones_by_zone[drone.current_zone.name].append(drone.name)
+                drones_by_zone[drone.current_pos.name].append(drone.name)
         else:
             for drone_name, zone_name in drone_positions.items():
                 drones_by_zone[zone_name].append(drone_name)

@@ -68,5 +68,5 @@ class Network(BaseModel):
     def all_drones_at_end(self) -> bool:
         """Check if all drones have reached the end hub."""
         return all(
-            drone.current_zone.name == self.end_hub for drone in self.drones
+            drone.current_pos.name == self.end_hub for drone in self.drones
         )
