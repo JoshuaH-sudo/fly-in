@@ -9,14 +9,37 @@ class OutputLogger:
     """Handles CLI output formatting and rendering."""
 
     def __init__(self, color_enabled: bool) -> None:
+        """Initialize logger with optional ANSI color support.
+
+        Args:
+            color_enabled: Whether terminal color styling should be applied.
+        """
         self.color_enabled = color_enabled
 
     def _style(self, text: str, code: str) -> str:
+        """Apply ANSI style code when color output is enabled.
+
+        Args:
+            text: Text to style.
+            code: ANSI style code.
+
+        Returns:
+            Styled text when color is enabled, otherwise original text.
+        """
         if not self.color_enabled:
             return text
         return f"\033[{code}m{text}\033[0m"
 
     def _format_zone(self, zone: Zone, network: Network) -> str:
+        """Format one zone row for the network summary output.
+
+        Args:
+            zone: Zone to format.
+            network: Parsed network context.
+
+        Returns:
+            Aligned summary line for one zone.
+        """
         role = "-"
         if zone.name == network.start_hub:
             role = "start"
@@ -30,12 +53,28 @@ class OutputLogger:
         )
 
     def _format_connection(self, connection: Connection) -> str:
+        """Format one connection row for the network summary output.
+
+        Args:
+            connection: Connection to format.
+
+        Returns:
+            Aligned summary line for one connection.
+        """
         return (
             f"{connection.zone_a:<20} <-> {connection.zone_b:<20} "
             f"cap={connection.max_link_capacity}"
         )
 
     def format_network(self, network: Network) -> str:
+        """Return a multiline summary of zones and connections.
+
+        Args:
+            network: Parsed network to render.
+
+        Returns:
+            Multiline network summary string.
+        """
         lines: list[str] = []
         title = self._style("Network Summary", "1;36")
         lines.append(title)
@@ -61,8 +100,25 @@ class OutputLogger:
         return "\n".join(lines)
 
     def print_map_title(self, map_title: str) -> None:
+        """Print the selected map title with optional emphasis.
+
+        Args:
+            map_title: Display title for the chosen map.
+
+        Returns:
+            None.
+        """
         pretty_title = self._style(f"=== {map_title} ===", "1;32")
         print(f"\n{pretty_title}")
 
     def print_map_error(self, map_path: str, error: Exception) -> None:
+        """Print parsing errors with map path context.
+
+        Args:
+            map_path: Path of the map that failed parsing.
+            error: Exception raised during parsing.
+
+        Returns:
+            None.
+        """
         print(f"Error parsing {map_path}: {error}")

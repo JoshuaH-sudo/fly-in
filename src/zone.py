@@ -5,6 +5,8 @@ import enum
 
 
 class ZoneType(enum.Enum):
+    """Enumerate supported zone categories in Fly-in maps."""
+
     NORMAL = "normal"
     BLOCKED = "blocked"
     RESTRICTED = "restricted"
@@ -14,7 +16,14 @@ class ZoneType(enum.Enum):
 
     @property
     def movement_cost(self) -> int:
-        """Return movement cost in turns when entering this zone type."""
+        """Return movement cost in turns when entering this zone type.
+
+        Returns:
+            Number of turns required to enter this zone type.
+
+        Raises:
+            ValueError: If this zone type cannot be entered.
+        """
         if self is ZoneType.RESTRICTED:
             return 2
         if self is ZoneType.BLOCKED:
@@ -23,7 +32,11 @@ class ZoneType(enum.Enum):
 
     @property
     def default_max_drones(self) -> int:
-        """Return default zone capacity for this zone type."""
+        """Return default zone capacity for this zone type.
+
+        Returns:
+            Default occupancy limit used when metadata omits max_drones.
+        """
         if self is ZoneType.BLOCKED:
             return 0
         if self is ZoneType.PRIORITY:
@@ -47,6 +60,14 @@ class Zone(BaseModel):
     @field_validator("name")
     @classmethod
     def validate_name(cls, value: str) -> str:
+        """Validate zone identifier constraints.
+
+        Args:
+            value: Zone name to validate.
+
+        Returns:
+            Validated zone name.
+        """
         if not value:
             raise ValueError("Zone name cannot be empty.")
         if " " in value or "-" in value:
@@ -56,6 +77,14 @@ class Zone(BaseModel):
     @field_validator("max_drones")
     @classmethod
     def validate_max_drones(cls, value: int) -> int:
+        """Validate that zone capacity is non-negative.
+
+        Args:
+            value: Zone capacity value.
+
+        Returns:
+            Validated capacity value.
+        """
         if value < 0:
             raise ValueError("max_drones must be a non-negative integer.")
         return value
@@ -63,11 +92,24 @@ class Zone(BaseModel):
     @field_validator("color")
     @classmethod
     def validate_color(cls, value: str | None) -> str | None:
+        """Validate optional display color metadata.
+
+        Args:
+            value: Optional color token.
+
+        Returns:
+            Validated color token or ``None``.
+        """
         if value is not None and (not value or " " in value):
             raise ValueError("color must be a single word when provided.")
         return value
 
     def hold_drone(self) -> None:
+        """Reserve one occupancy slot in this zone.
+
+        Returns:
+            None.
+        """
         if self.current_drones >= self.max_drones and self.zone_type not in {
             ZoneType.START,
             ZoneType.END,
@@ -76,5 +118,10 @@ class Zone(BaseModel):
         object.__setattr__(self, "current_drones", self.current_drones + 1)
 
     def leave_drone(self) -> None:
+        """Release one occupancy slot when at least one drone is present.
+
+        Returns:
+            None.
+        """
         if self.current_drones > 0:
             object.__setattr__(self, "current_drones", self.current_drones - 1)

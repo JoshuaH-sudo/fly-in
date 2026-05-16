@@ -19,6 +19,14 @@ class Connection(BaseModel):
     @field_validator("zone_a", "zone_b")
     @classmethod
     def validate_zone_name(cls, value: str) -> str:
+        """Validate endpoint zone names for connection declarations.
+
+        Args:
+            value: Zone name to validate.
+
+        Returns:
+            The validated zone name.
+        """
         if not value:
             raise ValueError("Connection zone names cannot be empty.")
         if " " in value or "-" in value:
@@ -30,6 +38,14 @@ class Connection(BaseModel):
     @field_validator("max_link_capacity")
     @classmethod
     def validate_max_link_capacity(cls, value: int) -> int:
+        """Validate that link capacity is positive.
+
+        Args:
+            value: Link capacity value.
+
+        Returns:
+            The validated capacity value.
+        """
         if value <= 0:
             raise ValueError("max_link_capacity must be a positive integer.")
         return value
@@ -38,14 +54,29 @@ class Connection(BaseModel):
         self,
         **kwds: Any,
     ) -> None:
+        """Initialize the connection and derive its display name.
+
+        Args:
+            **kwds: Connection field values.
+        """
         super().__init__(**kwds)
         object.__setattr__(self, "name", f"{self.zone_a}<->{self.zone_b}")
 
     def hold_drone(self) -> None:
+        """Reserve one traversal slot on this connection.
+
+        Returns:
+            None.
+        """
         if self.current_drones >= self.max_link_capacity:
             raise ValueError(f"Connection {self.name} is at full capacity.")
         object.__setattr__(self, "current_drones", self.current_drones + 1)
 
     def leave_drone(self) -> None:
+        """Release one traversal slot when at least one drone is present.
+
+        Returns:
+            None.
+        """
         if self.current_drones > 0:
             object.__setattr__(self, "current_drones", self.current_drones - 1)

@@ -4,11 +4,19 @@ from src.connection import Connection
 from src.display import Display
 from src.drone import Drone
 from src.network import Network
+from src.types import DronePositions
 from src.zone import Zone, ZoneType
 
 
-def _snapshot_drone_positions(network: Network) -> dict[str, str]:
-    """Capture each drone's current zone for history rendering."""
+def _snapshot_drone_positions(network: Network) -> DronePositions:
+    """Capture each drone's current zone for history rendering.
+
+    Args:
+        network: Network with current drone states.
+
+    Returns:
+        Snapshot mapping drone names to zone names.
+    """
     return {drone.name: drone.current_pos.name for drone in network.drones}
 
 
@@ -17,7 +25,16 @@ def _next_step_towards_end(
     network: Network,
     current_zone: Zone | Connection,
 ) -> Zone | Connection | None:
-    """Return the next zone name on a shortest path to end_hub."""
+    """Return the next valid move for one drone toward the end hub.
+
+    Args:
+        drone: Drone to route for this turn.
+        network: Parsed network state.
+        current_zone: Drone's current zone or connection.
+
+    Returns:
+        Next zone/connection to move to, or ``None`` if no move is possible.
+    """
     if current_zone.name == network.end_hub:
         return None
 
@@ -54,8 +71,17 @@ def _next_step_towards_end(
 def run_simulation(
     network: Network,
     render_history: bool = True,
-) -> list[dict[str, str]]:
-    position_history: list[dict[str, str]] = [
+) -> list[DronePositions]:
+    """Run the simulation until all drones arrive at the end hub.
+
+    Args:
+        network: Parsed network state.
+        render_history: Whether to open the visual history browser.
+
+    Returns:
+        Ordered list of drone-position snapshots (including step 0).
+    """
+    position_history: list[DronePositions] = [
         _snapshot_drone_positions(network)
     ]
 

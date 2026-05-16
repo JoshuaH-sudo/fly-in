@@ -3,24 +3,43 @@
 import os
 import sys
 from dataclasses import dataclass
-from simple_term_menu import TerminalMenu
 
 
 @dataclass(frozen=True)
 class MapOption:
+    """One selectable map entry.
+
+    Attributes:
+        label: Display label shown to the user.
+        path: Absolute path to the map file.
+    """
+
     label: str
     path: str
 
 
 class MapMenu:
-    """Builds and displays a map selection menu from folders under maps/."""
+    """Build and display map selection menus.
+
+    The menu lists maps discovered under the configured maps directory.
+    """
 
     _CATEGORY_ORDER = ["easy", "medium", "hard", "challenger"]
 
     def __init__(self, maps_dir: str) -> None:
+        """Initialize a menu rooted at the maps directory path.
+
+        Args:
+            maps_dir: Path containing category subfolders with map files.
+        """
         self.maps_dir = maps_dir
 
     def discover_options(self) -> list[MapOption]:
+        """Discover available map options.
+
+        Returns:
+            List of discovered map options.
+        """
         options: list[MapOption] = []
         if not os.path.isdir(self.maps_dir):
             return options
@@ -46,6 +65,14 @@ class MapMenu:
         self,
         by_category: dict[str, list[MapOption]],
     ) -> list[str]:
+        """Return categories sorted by preferred order then alphabetically.
+
+        Args:
+            by_category: Mapping of category name to map options.
+
+        Returns:
+            Ordered category names for display.
+        """
         ordered = [
             category
             for category in self._CATEGORY_ORDER
@@ -65,6 +92,15 @@ class MapMenu:
         ordered_categories: list[str],
         by_category: dict[str, list[MapOption]],
     ) -> str | None:
+        """Select a map via classic numeric prompts.
+
+        Args:
+            ordered_categories: Ordered category names.
+            by_category: Category-to-options mapping.
+
+        Returns:
+            Chosen map path, or ``None`` if user cancels.
+        """
         print("Map categories:")
         for index, category in enumerate(ordered_categories, start=1):
             count = len(by_category[category])
@@ -114,6 +150,18 @@ class MapMenu:
         ordered_categories: list[str],
         by_category: dict[str, list[MapOption]],
     ) -> str | None:
+        """Select a map with ``simple-term-menu`` widgets.
+
+        Args:
+            ordered_categories: Ordered category names.
+            by_category: Category-to-options mapping.
+
+        Returns:
+            Chosen map path, or ``None`` if user cancels.
+        """
+        from simple_term_menu import (  # pyright: ignore[reportMissingImports]
+            TerminalMenu,
+        )
 
         category_entries = [
             f"{category} ({len(by_category[category])} maps)"
@@ -162,11 +210,16 @@ class MapMenu:
         return selected_options[selected_map_index].path
 
     def choose_map(self, options: list[MapOption]) -> str | None:
+        """Choose one map from discovered options.
+
+        Args:
+            options: Discovered map options.
+
+        Returns:
+            Selected map path, or ``None`` when no selection is made.
+        """
         if not options:
             return None
-
-        if not sys.stdin.isatty():
-            return options[0].path
 
         by_category: dict[str, list[MapOption]] = {}
         for option in options:
@@ -174,6 +227,14 @@ class MapMenu:
             by_category.setdefault(category, []).append(option)
 
         ordered_categories = self._ordered_categories(by_category)
+
+        if not sys.stdin.isatty():
+            first_category = ordered_categories[0]
+            first_options = sorted(
+                by_category[first_category],
+                key=lambda option: option.label,
+            )
+            return first_options[0].path
 
         try:
             return self._choose_with_terminal_menu(

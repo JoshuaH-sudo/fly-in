@@ -1,5 +1,5 @@
 from collections import Counter, defaultdict
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 import math
 
 import matplotlib.pyplot as plt
@@ -8,6 +8,8 @@ from matplotlib import colors as mcolors
 from matplotlib.axes import Axes
 
 from src.network import Network
+from src.types import DronePositionsView
+from src.utils.drone_labels import drone_label
 from src.zone import Zone
 
 
@@ -17,16 +19,35 @@ class Display:
     network: Network
 
     def __init__(self, network: Network) -> None:
+        """Initialize the renderer with a parsed network.
+
+        Args:
+            network: Network to visualize.
+        """
         self.network = network
 
     def readable_text_color(self, fill_color: str) -> str:
-        """Return high-contrast text color for a given node fill color."""
+        """Return high-contrast text color for a node fill color.
+
+        Args:
+            fill_color: Matplotlib-compatible fill color value.
+
+        Returns:
+            Dark or light text color optimized for readability.
+        """
         red, green, blue = mcolors.to_rgb(fill_color)
         luminance = 0.2126 * red + 0.7152 * green + 0.0722 * blue
         return "#111111" if luminance > 0.55 else "#f5f5f5"
 
     def _zone_color(self, zone: Zone) -> str:
-        """Resolve a matplotlib-safe display color for a zone."""
+        """Resolve a matplotlib-safe display color for a zone.
+
+        Args:
+            zone: Zone whose color metadata should be resolved.
+
+        Returns:
+            Valid matplotlib color token.
+        """
         candidate = zone.color if zone.color is not None else "#9aa0a6"
         try:
             mcolors.to_rgb(candidate)
@@ -35,25 +56,33 @@ class Display:
             return "#9aa0a6"
 
     def _drone_counts(self) -> Counter[str]:
-        """Count how many drones are currently in each zone."""
+        """Count how many drones are currently in each zone.
+
+        Returns:
+            Counter keyed by zone name.
+        """
         return Counter(
             drone.current_pos.name for drone in self.network.drones
         )
-
-    def _drone_label(self, drone_name: str) -> str:
-        """Format an internal drone name as user-facing label D n."""
-        if drone_name.startswith("drone_"):
-            return f"D{drone_name.split('_', maxsplit=1)[1]}"
-        return drone_name
 
     def _draw_drones(
         self,
         ax: Axes,
         positions: Mapping[str, tuple[float | int, float | int]],
         node_sizes: Mapping[str, float | int],
-        drone_positions: Mapping[str, str] | None = None,
+        drone_positions: DronePositionsView | None = None,
     ) -> None:
-        """Draw drones in compact clusters anchored to each zone center."""
+        """Draw drones in compact clusters anchored to each zone center.
+
+        Args:
+            ax: Target axes used for drawing.
+            positions: Zone positions in data coordinates.
+            node_sizes: Per-zone node marker sizes.
+            drone_positions: Optional per-drone snapshot for one history step.
+
+        Returns:
+            None.
+        """
         drones_by_zone: dict[str, list[str]] = defaultdict(list)
         if drone_positions is None:
             for drone in self.network.drones:
@@ -157,7 +186,7 @@ class Display:
                 ax.text(
                     drone_x,
                     drone_y,
-                    self._drone_label(drone_name),
+                    drone_label(drone_name),
                     ha="center",
                     va="center",
                     fontsize=8,
@@ -169,10 +198,20 @@ class Display:
         self,
         ax: Axes,
         drone_counts: Counter[str] | None = None,
-        drone_positions: Mapping[str, str] | None = None,
+        drone_positions: DronePositionsView | None = None,
         title: str = "Fly-in Graph Preview",
     ) -> None:
-        """Draw the network graph and drone counts on a matplotlib axis."""
+        """Draw the network graph and drone overlays on a matplotlib axis.
+
+        Args:
+            ax: Target axes used for drawing.
+            drone_counts: Optional precomputed zone-level drone counts.
+            drone_positions: Optional per-drone positions snapshot.
+            title: Figure title shown above the graph.
+
+        Returns:
+            None.
+        """
         graph: nx.DiGraph[str] = nx.DiGraph()
         graph.add_nodes_from(self.network.zones.keys())
 
@@ -286,14 +325,25 @@ class Display:
         ax.set_title(title, fontsize=16)
 
     def show(self) -> None:
-        """Open a matplotlib window with the current network rendering."""
+        """Open a matplotlib window with the current network rendering.
+
+        Returns:
+            None.
+        """
         _, ax = plt.subplots(figsize=(12.5, 6.5))
         self.draw(ax)
         plt.tight_layout()
         plt.show()
 
-    def show_history(self, history: list[dict[str, str]]) -> None:
-        """Render a turn history and browse with arrow keys."""
+    def show_history(self, history: Sequence[DronePositionsView]) -> None:
+        """Render a turn history and browse with keyboard arrows.
+
+        Args:
+            history: Ordered drone-position snapshots.
+
+        Returns:
+            None.
+        """
         if not history:
             return
 

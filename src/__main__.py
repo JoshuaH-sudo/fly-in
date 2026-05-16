@@ -8,10 +8,16 @@ from src.map_menu import MapMenu
 from src.output_logger import OutputLogger
 from src.parser import parse_map_file
 from src.simulator import run_simulation
+from src.types import DronePositions
+from src.utils.drone_labels import drone_label, drone_sort_key
 
 
 def build_parser() -> argparse.ArgumentParser:
-    """Build CLI parser for the Fly-in command."""
+    """Build the command-line parser for the Fly-in CLI.
+
+    Returns:
+        Configured argument parser instance.
+    """
     parser = argparse.ArgumentParser(
         description="Fly-in drone routing simulator",
     )
@@ -19,25 +25,20 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _drone_sort_key(drone_name: str) -> tuple[int, str]:
-    if drone_name.startswith("drone_"):
-        suffix = drone_name.split("_", maxsplit=1)[1]
-        if suffix.isdigit():
-            return (int(suffix), drone_name)
-    return (10**9, drone_name)
+def _print_simulation_output(turns: list[DronePositions]) -> None:
+    """Print simulation history as one section per step.
 
+    Args:
+        turns: Ordered snapshots of drone positions for each step.
 
-def _print_simulation_output(turns: list[dict[str, str]]) -> None:
+    Returns:
+        None.
+    """
     for step_index, turn_positions in enumerate(turns):
         items: list[str] = []
-        for drone_name in sorted(turn_positions, key=_drone_sort_key):
-            if drone_name.startswith("drone_"):
-                suffix = drone_name.split("_", maxsplit=1)[1]
-                drone_label = f"D{suffix}"
-            else:
-                drone_label = drone_name
+        for drone_name in sorted(turn_positions, key=drone_sort_key):
             zone_name = turn_positions[drone_name]
-            items.append(f"{drone_label}: {zone_name}")
+            items.append(f"{drone_label(drone_name)}: {zone_name}")
 
         print(f"\n=== Step {step_index} ===\n")
         for item in items:
@@ -45,7 +46,11 @@ def _print_simulation_output(turns: list[dict[str, str]]) -> None:
 
 
 def main() -> int:
-    """Run the Fly-in skeleton application."""
+    """Run the Fly-in CLI application.
+
+    Returns:
+        Process exit code. Zero means success.
+    """
     parser = build_parser()
     args = parser.parse_args()
     logger = OutputLogger(color_enabled=sys.stdout.isatty())
@@ -64,6 +69,9 @@ def main() -> int:
         selected_map = menu.choose_map(options)
         if selected_map is None:
             return 0
+
+    if selected_map is None:
+        return 1
 
     map_title = os.path.relpath(selected_map, root)
     logger.print_map_title(map_title)

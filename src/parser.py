@@ -8,7 +8,14 @@ from src.zone import Zone, ZoneType
 
 
 def _clean_non_comment_lines(path: str) -> list[str]:
-    """Load map file lines while dropping empty lines and comments."""
+    """Load map file lines while dropping empty lines and comments.
+
+    Args:
+        path: File system path to a map file.
+
+    Returns:
+        Ordered list of meaningful lines.
+    """
     clean_lines: list[str] = []
     with open(path, "r") as file:
         for raw_line in file:
@@ -20,7 +27,14 @@ def _clean_non_comment_lines(path: str) -> list[str]:
 
 
 def _parse_metadata_items(metadata_str: str) -> dict[str, str]:
-    """Parse key=value tokens from bracket metadata."""
+    """Parse ``key=value`` tokens from metadata.
+
+    Args:
+        metadata_str: Raw metadata text without brackets.
+
+    Returns:
+        Parsed metadata dictionary.
+    """
     metadata: dict[str, str] = {}
     for item in metadata_str.split():
         if "=" not in item:
@@ -31,7 +45,14 @@ def _parse_metadata_items(metadata_str: str) -> dict[str, str]:
 
 
 def _extract_bracket_metadata(metadata_part: str) -> dict[str, str]:
-    """Return parsed metadata if wrapped with [ and ]."""
+    """Return parsed metadata when wrapped with square brackets.
+
+    Args:
+        metadata_part: Metadata fragment including brackets.
+
+    Returns:
+        Parsed metadata dictionary.
+    """
     if not metadata_part.startswith("[") or not metadata_part.endswith("]"):
         raise ValueError("Metadata must be enclosed in brackets.")
     metadata_str = metadata_part[1:-1]
@@ -41,7 +62,14 @@ def _extract_bracket_metadata(metadata_part: str) -> dict[str, str]:
 def _parse_zone_metadata(
     metadata: dict[str, str],
 ) -> tuple[ZoneType, int | None, str | None]:
-    """Parse zone metadata entries into validated values."""
+    """Parse zone metadata entries into validated values.
+
+    Args:
+        metadata: Parsed metadata key-value pairs.
+
+    Returns:
+        Tuple of zone type, optional max drones, and optional color.
+    """
     zone_type = ZoneType.NORMAL
     max_drones: int | None = None
     color: str | None = None
@@ -64,7 +92,14 @@ def _parse_zone_metadata(
 
 
 def parse_zone_definition(line: str) -> Zone:
-    """Parse a zone definition line into a Zone model."""
+    """Parse one zone definition line into a ``Zone`` model.
+
+    Args:
+        line: Zone declaration text.
+
+    Returns:
+        Parsed and validated ``Zone`` instance.
+    """
     try:
         # Expected shape: zone: <name> <x> <y> [optional metadata]
         parts = line.split()
@@ -108,7 +143,17 @@ def _parse_connection_definition(
     zones: dict[str, Zone],
     existing_connections: list[Connection],
 ) -> Connection:
-    """Parse and validate one connection definition line."""
+    """Parse and validate one connection definition line.
+
+    Args:
+        line: Raw connection declaration.
+        index: Zero-based line index in cleaned file content.
+        zones: Parsed zones available for reference validation.
+        existing_connections: Connections parsed so far.
+
+    Returns:
+        Parsed and validated ``Connection`` instance.
+    """
     conn_parts = line[len("connection:"):].strip().split()
     if not conn_parts:
         raise ValueError(
@@ -179,7 +224,18 @@ def _parse_zone_like_line(
     start_hub: str | None,
     end_hub: str | None,
 ) -> tuple[str | None, str | None]:
-    """Parse zone/hub/start_hub/end_hub declarations into a Zone."""
+    """Parse zone/hub declarations and update hub markers.
+
+    Args:
+        line: Raw declaration line.
+        index: Zero-based line index in cleaned content.
+        zones: Parsed zones dictionary to mutate.
+        start_hub: Current parsed start hub name.
+        end_hub: Current parsed end hub name.
+
+    Returns:
+        Updated ``(start_hub, end_hub)`` tuple.
+    """
     parts = line.split(":", 1)
     kind = parts[0].strip()
     rest = parts[1].strip()
@@ -207,7 +263,14 @@ def _parse_zone_like_line(
 
 
 def _validate_required_headers(clean_lines: list[str]) -> None:
-    """Validate required top-level directives before line parsing."""
+    """Validate required top-level directives before line parsing.
+
+    Args:
+        clean_lines: Cleaned, non-comment file lines.
+
+    Returns:
+        None.
+    """
     if not clean_lines or not clean_lines[0].startswith("nb_drones:"):
         raise ValueError("Parsing error: First line must define nb_drones.")
 
@@ -223,7 +286,14 @@ def _validate_required_headers(clean_lines: list[str]) -> None:
 
 
 def parse_map_file(path: str) -> Network:
-    """Parse a map file into a validated Network model."""
+    """Parse a map file into a validated ``Network`` model.
+
+    Args:
+        path: File system path to map file.
+
+    Returns:
+        Parsed network object with zones, connections, and drones.
+    """
     nb_drones = 0
     start_hub: str | None = None
     end_hub: str | None = None

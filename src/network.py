@@ -21,6 +21,11 @@ class Network(BaseModel):
     drones: list[Drone] = Field(default_factory=list)
 
     def __init__(self, **kwargs: Any) -> None:
+        """Build graph structures and initialize drones from parsed values.
+
+        Args:
+            **kwargs: Network field values passed to the base model.
+        """
         super().__init__(**kwargs)
         zone_connections: dict[str, set[Zone]] = {
             name: set() for name in self.zones
@@ -46,6 +51,14 @@ class Network(BaseModel):
     @field_validator("nb_drones")
     @classmethod
     def validate_nb_drones(cls, value: int) -> int:
+        """Ensure the number of drones is strictly positive.
+
+        Args:
+            value: Number of drones declared in the map.
+
+        Returns:
+            Validated positive drone count.
+        """
         if value <= 0:
             raise ValueError("nb_drones must be a positive integer.")
         return value
@@ -53,12 +66,27 @@ class Network(BaseModel):
     @field_validator("start_hub", "end_hub")
     @classmethod
     def validate_hub_name(cls, value: str) -> str:
+        """Ensure start and end hub names are present.
+
+        Args:
+            value: Hub zone name.
+
+        Returns:
+            Validated non-empty hub name.
+        """
         if not value:
             raise ValueError("start_hub and end_hub must be defined.")
         return value
 
     def get_zone_neighbors(self, position: Zone | Connection) -> set[Zone]:
-        """Return the set of zones directly connected to the given position."""
+        """Return zones directly connected to a position.
+
+        Args:
+            position: Current zone or connection where a drone is located.
+
+        Returns:
+            Adjacent zones available from the given position.
+        """
         if isinstance(position, Connection):
             # For a connection, return the next zones on the other side
             return self.zone_connections.get(position.zone_b, set())
@@ -66,12 +94,24 @@ class Network(BaseModel):
         return self.zone_connections.get(position.name, set())
 
     def get_zone(self, name: str) -> Zone:
+        """Return one zone by name.
+
+        Args:
+            name: Zone identifier.
+
+        Returns:
+            Matching zone object.
+        """
         if name not in self.zones:
             raise ValueError(f"Zone '{name}' not found in the network.")
         return self.zones[name]
 
     def all_drones_at_end(self) -> bool:
-        """Check if all drones have reached the end hub."""
+        """Check if all drones have reached the end hub.
+
+        Returns:
+            ``True`` if every drone is currently at the end hub.
+        """
         return all(
             drone.current_pos.name == self.end_hub for drone in self.drones
         )
