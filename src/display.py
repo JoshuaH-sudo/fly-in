@@ -1,5 +1,6 @@
 from collections import Counter, defaultdict
 from collections.abc import Mapping
+import math
 
 import matplotlib.pyplot as plt
 import networkx as nx
@@ -49,9 +50,10 @@ class Display:
         self,
         ax: Axes,
         positions: Mapping[str, tuple[float | int, float | int]],
+        node_sizes: Mapping[str, float | int],
         drone_positions: Mapping[str, str] | None = None,
     ) -> None:
-        """Draw each drone as a small diamond around its current zone."""
+        """Draw drones in compact clusters anchored to each zone center."""
         drones_by_zone: dict[str, list[str]] = defaultdict(list)
         if drone_positions is None:
             for drone in self.network.drones:
@@ -60,33 +62,92 @@ class Display:
             for drone_name, zone_name in drone_positions.items():
                 drones_by_zone[zone_name].append(drone_name)
 
+        def data_from_pixel_offset(
+            x_center: float | int,
+            y_center: float | int,
+            dx_px: float,
+            dy_px: float,
+        ) -> tuple[float, float]:
+            base_px = ax.transData.transform((x_center, y_center))
+            target_px = (base_px[0] + dx_px, base_px[1] + dy_px)
+            data_x, data_y = ax.transData.inverted().transform(target_px)
+            return float(data_x), float(data_y)
+
+        def layout_offsets(
+            count: int,
+            zone_size: float,
+        ) -> list[tuple[float, float]]:
+            if count <= 0:
+                return []
+            if count == 1:
+                return [(0.0, 0.0)]
+
+            node_radius_pt = math.sqrt(zone_size / math.pi)
+            px_per_pt = ax.figure.dpi / 72.0
+            max_radius_px = node_radius_pt * px_per_pt * 0.78
+            drone_radius_pt = max(4.6, min(9.2, node_radius_pt / 2.7))
+            min_sep_px = (2.0 * drone_radius_pt * px_per_pt) * 1.03
+            ring_step_px = max(min_sep_px * 0.88, 9.0)
+
+            offsets: list[tuple[float, float]] = []
+            if count % 2 == 1:
+                offsets.append((0.0, 0.0))
+
+            ring_index = 1
+            while len(offsets) < count:
+                radius_px = ring_index * ring_step_px
+                ring_capacity = max(
+                    6,
+                    int((2.0 * math.pi * radius_px) / max(min_sep_px, 1.0)),
+                )
+                slots = min(ring_capacity, count - len(offsets))
+                for slot in range(slots):
+                    angle = (2.0 * math.pi * slot / slots) - (math.pi / 2.0)
+                    offsets.append(
+                        (
+                            radius_px * math.cos(angle),
+                            radius_px * math.sin(angle),
+                        )
+                    )
+                ring_index += 1
+
+            furthest = max(
+                math.hypot(x_off, y_off) for x_off, y_off in offsets
+            )
+            if furthest > max_radius_px > 0:
+                scale = max_radius_px / furthest
+                offsets = [
+                    (x_off * scale, y_off * scale)
+                    for x_off, y_off in offsets
+                ]
+
+            return offsets
+
         for zone_name, drone_names in drones_by_zone.items():
             x_pos, y_pos = positions[zone_name]
             count = len(drone_names)
             sorted_names = sorted(drone_names)
+            zone_size = float(node_sizes.get(zone_name, 4600))
+            node_radius_pt = math.sqrt(zone_size / math.pi)
+            drone_radius_pt = max(4.6, min(9.2, node_radius_pt / 2.7))
+            drone_marker_size = math.pi * (drone_radius_pt**2)
+            offsets = layout_offsets(count, zone_size)
 
-            if count == 1:
-                placements = [(x_pos, y_pos, sorted_names[0])]
-            else:
-                cols = min(3, count)
-                rows = (count + cols - 1) // cols
-                spacing = 0.18
-                start_x = x_pos - spacing * (cols - 1) / 2
-                start_y = y_pos + spacing * (rows - 1) / 2
-                placements = []
-                for index, drone_name in enumerate(sorted_names):
-                    row = index // cols
-                    col = index % cols
-                    drone_x = start_x + col * spacing
-                    drone_y = start_y - row * spacing
-                    placements.append((drone_x, drone_y, drone_name))
+            placements: list[tuple[float, float, str]] = []
+            for drone_name, (x_off, y_off) in zip(sorted_names, offsets):
+                drone_x, drone_y = data_from_pixel_offset(
+                    x_pos,
+                    y_pos,
+                    x_off,
+                    y_off,
+                )
+                placements.append((drone_x, drone_y, drone_name))
 
             for drone_x, drone_y, drone_name in placements:
-
                 ax.scatter(
                     drone_x,
                     drone_y,
-                    s=200,
+                    s=drone_marker_size,
                     marker="D",
                     c="#ffffff",
                     edgecolors="#1f1f1f",
@@ -146,6 +207,7 @@ class Display:
             )
             for name in graph.nodes()
         ]
+        node_sizes_by_name = dict(zip(graph.nodes(), node_sizes))
         counts = (
             drone_counts if drone_counts is not None else self._drone_counts()
         )
@@ -200,9 +262,14 @@ class Display:
             )
 
         if drone_positions is not None:
-            self._draw_drones(ax, positions, drone_positions=drone_positions)
+            self._draw_drones(
+                ax,
+                positions,
+                node_sizes_by_name,
+                drone_positions=drone_positions,
+            )
         elif drone_counts is None:
-            self._draw_drones(ax, positions)
+            self._draw_drones(ax, positions, node_sizes_by_name)
 
         nx.draw_networkx_edge_labels(
             graph,

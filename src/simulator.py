@@ -25,6 +25,11 @@ def _next_step_towards_end(
     for neighbor in sorted(neighbors, key=lambda zone: zone.name):
         if neighbor.name == network.end_hub:
             return neighbor
+        if (
+            neighbor.zone_type == ZoneType.PRIORITY
+            and neighbor.current_drones >= neighbor.max_drones
+        ):
+            return neighbor
         if neighbor.zone_type == ZoneType.BLOCKED:
             continue
         if neighbor.name in drone.visited_zones:
