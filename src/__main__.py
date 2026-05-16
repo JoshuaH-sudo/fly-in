@@ -3,7 +3,6 @@
 import argparse
 import os
 import sys
-from typing import Counter
 
 from src.map_menu import MapMenu
 from src.output_logger import OutputLogger
@@ -20,9 +19,29 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _print_simulation_output(turns: list[Counter[str]]) -> None:
-    for turn_line in turns:
-        print(turn_line)
+def _drone_sort_key(drone_name: str) -> tuple[int, str]:
+    if drone_name.startswith("drone_"):
+        suffix = drone_name.split("_", maxsplit=1)[1]
+        if suffix.isdigit():
+            return (int(suffix), drone_name)
+    return (10**9, drone_name)
+
+
+def _print_simulation_output(turns: list[dict[str, str]]) -> None:
+    for step_index, turn_positions in enumerate(turns):
+        items: list[str] = []
+        for drone_name in sorted(turn_positions, key=_drone_sort_key):
+            if drone_name.startswith("drone_"):
+                suffix = drone_name.split("_", maxsplit=1)[1]
+                drone_label = f"D{suffix}"
+            else:
+                drone_label = drone_name
+            zone_name = turn_positions[drone_name]
+            items.append(f"{drone_label}: {zone_name}")
+
+        print(f"\n=== Step {step_index} ===\n")
+        for item in items:
+            print(f"{item}")
 
 
 def main() -> int:
