@@ -51,7 +51,10 @@ def _next_step_towards_end(
     return None
 
 
-def run_simulation(network: Network) -> list[dict[str, str]]:
+def run_simulation(
+    network: Network,
+    render_history: bool = True,
+) -> list[dict[str, str]]:
     position_history: list[dict[str, str]] = [
         _snapshot_drone_positions(network)
     ]
@@ -79,5 +82,6 @@ def run_simulation(network: Network) -> list[dict[str, str]]:
 
         position_history.append(_snapshot_drone_positions(network))
 
-    Display(network).show_history(position_history)
+    if render_history:
+        Display(network).show_history(position_history)
     return position_history

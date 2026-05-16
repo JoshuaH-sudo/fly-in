@@ -3,6 +3,7 @@
 import os
 import sys
 from dataclasses import dataclass
+from simple_term_menu import TerminalMenu
 
 
 @dataclass(frozen=True)
@@ -113,9 +114,6 @@ class MapMenu:
         ordered_categories: list[str],
         by_category: dict[str, list[MapOption]],
     ) -> str | None:
-        from simple_term_menu import (  # pyright: ignore[reportMissingImports]
-            TerminalMenu,
-        )
 
         category_entries = [
             f"{category} ({len(by_category[category])} maps)"
