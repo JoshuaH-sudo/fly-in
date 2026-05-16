@@ -256,6 +256,8 @@ class Display:
             elif key in ("left", "up"):
                 current[0] = max(current[0] - 1, 0)
                 render_step()
+            elif key in ("escape", "enter"):
+                plt.close(figure)
 
         figure.canvas.mpl_connect("key_press_event", on_key)
         render_step()
