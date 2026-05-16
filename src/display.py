@@ -321,10 +321,14 @@ class Display:
 
         for name, (x_pos, y_pos) in positions.items():
             label = name.replace("_", "\n")
+            capacity_text = f"Cap: {self.network.zones[name].max_drones}"
             label_text = (
-                f"{label}\nDrones: {counts.get(name, 0)}"
+                (
+                    f"{label}\n{capacity_text}\n"
+                    f"Drones: {counts.get(name, 0)}"
+                )
                 if drone_counts is not None and drone_positions is None
-                else label
+                else f"{label}\n{capacity_text}"
             )
             fill_color = self._zone_color(self.network.zones[name])
             ax.text(
