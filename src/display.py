@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import networkx as nx
 from matplotlib import colors as mcolors
 from matplotlib.axes import Axes
+from matplotlib.figure import Figure
 
 from src.network import Network
 from src.types import DronePositionsView
@@ -374,7 +375,28 @@ class Display:
         _, ax = plt.subplots(figsize=(12.5, 6.5))
         self.draw(ax)
         plt.tight_layout()
-        plt.show()
+        self._show_until_closed()
+
+    def _show_until_closed(self, figure: Figure | None = None) -> None:
+        """Keep UI responsive until the target figure is actually closed.
+
+        Args:
+            figure: Optional specific figure to monitor.
+
+        Returns:
+            None.
+        """
+        target_figure = figure if figure is not None else plt.gcf()
+        closed = {"value": False}
+
+        def on_close(_event: object) -> None:
+            closed["value"] = True
+
+        target_figure.canvas.mpl_connect("close_event", on_close)
+        plt.show(block=False)
+
+        while not closed["value"] and plt.fignum_exists(target_figure.number):
+            plt.pause(0.05)
 
     def show_history(self, history: Sequence[DronePositionsView]) -> None:
         """Render a turn history and browse with keyboard arrows.
@@ -414,9 +436,9 @@ class Display:
             elif key in ("left", "up"):
                 current[0] = max(current[0] - 1, 0)
                 render_step()
-            elif key in ("escape", "enter"):
+            elif key in ("escape", "esc", "enter", "q"):
                 plt.close(figure)
 
         figure.canvas.mpl_connect("key_press_event", on_key)
         render_step()
-        plt.show()
+        self._show_until_closed(figure)

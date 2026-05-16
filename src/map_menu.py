@@ -25,6 +25,7 @@ class MapMenu:
     """
 
     _CATEGORY_ORDER = ["easy", "medium", "hard", "challenger"]
+    QUIT_SELECTION = "__quit__"
 
     def __init__(self, maps_dir: str) -> None:
         """Initialize a menu rooted at the maps directory path.
@@ -111,7 +112,7 @@ class MapMenu:
                 "Select a category number (or q to quit): "
             ).strip()
             if raw_choice.lower() in {"q", "quit", "exit"}:
-                return None
+                return self.QUIT_SELECTION
             if not raw_choice.isdigit():
                 print("Invalid input. Enter a number or q to quit.")
                 continue
@@ -135,7 +136,7 @@ class MapMenu:
         while True:
             raw_choice = input("Select a map number (or q to quit): ").strip()
             if raw_choice.lower() in {"q", "quit", "exit"}:
-                return None
+                return self.QUIT_SELECTION
             if not raw_choice.isdigit():
                 print("Invalid input. Enter a number or q to quit.")
                 continue
@@ -167,6 +168,7 @@ class MapMenu:
             f"{category} ({len(by_category[category])} maps)"
             for category in ordered_categories
         ]
+        category_entries.append("q) quit")
         category_menu = TerminalMenu(
             category_entries,
             title="Select map category",
@@ -182,6 +184,9 @@ class MapMenu:
         else:
             selected_category_index = selected_category_choice
 
+        if selected_category_index == len(ordered_categories):
+            return self.QUIT_SELECTION
+
         selected_category = ordered_categories[selected_category_index]
         selected_options = sorted(
             by_category[selected_category],
@@ -192,6 +197,8 @@ class MapMenu:
             option.label.split("/", maxsplit=1)[1]
             for option in selected_options
         ]
+        map_entries.append("< back")
+        map_entries.append("q) quit")
         map_menu = TerminalMenu(
             map_entries,
             title=f"Select map in {selected_category}",
@@ -206,6 +213,11 @@ class MapMenu:
             selected_map_index = selected_map_choice[0]
         else:
             selected_map_index = selected_map_choice
+
+        if selected_map_index == len(selected_options):
+            return None
+        if selected_map_index == len(selected_options) + 1:
+            return self.QUIT_SELECTION
 
         return selected_options[selected_map_index].path
 

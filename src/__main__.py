@@ -22,6 +22,11 @@ def build_parser() -> argparse.ArgumentParser:
         description="Fly-in drone routing simulator",
     )
     parser.add_argument("map_file", nargs="?", help="Path to the map file")
+    parser.add_argument(
+        "--no-display",
+        action="store_true",
+        help="Disable history display window after simulation.",
+    )
     return parser
 
 
@@ -57,35 +62,52 @@ def main() -> int:
     root = os.path.dirname(os.path.dirname(__file__))
     maps_dir = os.path.join(root, "maps")
 
-    selected_map: str | None = args.map_file
+    def run_selected_map(selected_map: str) -> bool:
+        map_title = os.path.relpath(selected_map, root)
+        logger.print_map_title(map_title)
+
+        try:
+            network = parse_map_file(selected_map)
+        except Exception as error:
+            logger.print_map_error(selected_map, error)
+            return False
+
+        print(logger.format_network(network))
+        turns = run_simulation(
+            network,
+            render_history=not args.no_display,
+        )
+        _print_simulation_output(turns)
+        return True
+
     if args.map_file:
-        selected_map = args.map_file
-    else:
-        menu = MapMenu(maps_dir)
-        options = menu.discover_options()
-        if not options:
-            print("No map files found.")
+        if not run_selected_map(args.map_file):
             return 1
+        return 0
+
+    menu = MapMenu(maps_dir)
+    options = menu.discover_options()
+    if not options:
+        print("No map files found.")
+        return 1
+
+    if not sys.stdin.isatty():
         selected_map = menu.choose_map(options)
-        if selected_map is None:
+        if selected_map is None or selected_map == MapMenu.QUIT_SELECTION:
             return 0
+        if not run_selected_map(selected_map):
+            return 1
+        return 0
 
-    if selected_map is None:
-        return 1
+    while True:
+        selected_map = menu.choose_map(options)
+        if selected_map == MapMenu.QUIT_SELECTION:
+            return 0
+        if selected_map is None:
+            # Ignore menu cancellations and return to the top-level menu.
+            continue
 
-    map_title = os.path.relpath(selected_map, root)
-    logger.print_map_title(map_title)
-
-    try:
-        network = parse_map_file(selected_map)
-    except Exception as error:
-        logger.print_map_error(selected_map, error)
-        return 1
-
-    print(logger.format_network(network))
-    turns = run_simulation(network)
-    _print_simulation_output(turns)
-    return 0
+        run_selected_map(selected_map)
 
 
 if __name__ == "__main__":
